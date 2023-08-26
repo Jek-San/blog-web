@@ -1,18 +1,87 @@
+import axios from "axios"
+import moment from "moment"
 import React, { useState } from "react"
 import ReactQuill from "react-quill"
 import "react-quill/dist/quill.snow.css"
+import { useLocation, useNavigate } from "react-router-dom"
 
 const Write = () => {
-
-  const [value, setValue] = useState("")
-  const [title, setTitle] = useState("")
+  const state = useLocation().state
+  const navigate = useNavigate()
+  const [value, setValue] = useState(state?.title || "")
+  const [title, setTitle] = useState(state?.desc || "")
   const [file, setFile] = useState(null)
-  const [cat, setCat] = useState("")
+  const [cat, setCat] = useState(state?.cat || "")
 
-  const handleClick = async () => {
+  const upload = async () => {
+    try {
+      const formData = new FormData()
+      formData.append("file", file)
+      const res = await axios.post(
+        `http://localhost:8000/api/upload`,
+        formData,
+        {
+          withCredentials: true,
+        }
+      )
+
+      return res.data
+    } catch (err) {
+      console.log(err)
+    }
+  }
+
+  const handleClick = async (e) => {
     e.preventDefault()
-    
-}
+
+    let imgUrl = "" // Initialize imgUrl
+
+    if (file) {
+      // If a new file is selected, upload it
+      const fileName = await upload()
+      imgUrl = fileName
+    } else if (state && state.img) {
+      // If editing an existing post and no new file, keep the existing image
+      imgUrl = state.img
+    }
+    try {
+      console.log("state", state)
+      if (state) {
+        //Put Call
+        await axios.put(
+          `http://localhost:8000/api/posts/${state.id}`,
+          {
+            title: title,
+            desc: value,
+            cat: cat,
+            img: imgUrl,
+          },
+          {
+            withCredentials: true,
+          }
+        )
+        navigate("/")
+      } else {
+        //Post Call
+        await axios.post(
+          `http://localhost:8000/api/posts/`,
+          {
+            title: title,
+            desc: value,
+            cat: cat,
+            img: imgUrl,
+            date: moment(Date.now()).format("YYYY-MM-DD HH:mm:ss"),
+          },
+          {
+            withCredentials: true,
+          }
+        )
+        navigate("/")
+      }
+    } catch (err) {
+      console.log(err)
+    }
+  }
 
   return (
     <div className="add">
@@ -20,6 +89,7 @@ const Write = () => {
         <input
           type="text"
           placeholder="Title"
+          value={title}
           onChange={(e) => setTitle(e.target.value)}
         />
 
@@ -46,7 +116,9 @@ const Write = () => {
             type="file"
             name=""
             id="file"
-            onChange={(e) => setFile(e.target.files[0])}
+            onChange={(e) => {
+              setFile(e.target.files[0])
+            }}
           />
           <label className="file" htmlFor="file">
             Upload Image
@@ -63,6 +135,7 @@ const Write = () => {
             <input
               onChange={(e) => setCat(e.target.value)}
               type="radio"
+              checked={cat === "art"}
               name="cat"
               value="art"
               id="art"
@@ -73,6 +146,7 @@ const Write = () => {
             <input
               onChange={(e) => setCat(e.target.value)}
               type="radio"
+              checked={cat === "science"}
               name="cat"
               value="science"
               id="science"
@@ -83,6 +157,7 @@ const Write = () => {
             <input
               onChange={(e) => setCat(e.target.value)}
               type="radio"
+              checked={cat === "technology"}
               name="cat"
               value="technology"
               id="technology"
@@ -93,6 +168,7 @@ const Write = () => {
             <input
               onChange={(e) => setCat(e.target.value)}
               type="radio"
+              checked={cat === "cinema"}
               name="cat"
               value="cinema"
               id="cinema"
@@ -104,6 +180,7 @@ const Write = () => {
             <input
               onChange={(e) => setCat(e.target.value)}
               type="radio"
+              checked={cat === "design"}
               name="cat"
               value="design"
               id="design"
@@ -114,6 +191,7 @@ const Write = () => {
             <input
               onChange={(e) => setCat(e.target.value)}
               type="radio"
+              checked={cat === "food"}
               name="cat"
               value="food"
               id="food"
